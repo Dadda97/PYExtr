@@ -220,14 +220,20 @@ class PyInstArchive:
             f.write(data)
 
 
-    def extractFiles(self):
+    def extractFiles(self, custom_dir=None):
         print('[+] Beginning extraction...please standby')
-        extractionDir = os.path.join(os.getcwd(), os.path.basename(self.filePath) + '_extracted')
 
-        if not os.path.exists(extractionDir):
-            os.mkdir(extractionDir)
+        if custom_dir is None:
+            extractionDir = os.path.join(os.getcwd(), os.path.basename(self.filePath) + '_extracted')
 
-        os.chdir(extractionDir)
+            if not os.path.exists(extractionDir):
+                os.mkdir(extractionDir)
+
+            os.chdir(extractionDir)
+        else:
+            if not os.path.exists(custom_dir):
+                os.makedirs(custom_dir)
+            os.chdir(custom_dir)
 
         for entry in self.tocList:
             basePath = os.path.dirname(entry.name)
