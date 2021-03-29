@@ -161,10 +161,12 @@ class PyInstaller(PythonExectable):
     def __get_encryption_key(self, encrypted_key_path):
         try:
             encrypted_key_path_pyc = encrypted_key_path + ".pyc" # For some reason uncompyle6 only works with .pyc extension
+            print("[*] Taking decryption key from {0}".format(encrypted_key_path_pyc))
             copyfile(encrypted_key_path, encrypted_key_path_pyc)
             if os.path.exists(encrypted_key_path_pyc):
                 encrypted_key_path_py = encrypted_key_path + ".py"
                 (total, okay, failed, verify_failed) = PythonExectable.decompile_pyc(None, [encrypted_key_path_pyc], encrypted_key_path_py)
+                print("[*] Looking for key inside the .pyc...")
                 if failed == 0 and verify_failed == 0:
                     from configparser import ConfigParser
                     from io import StringIO
@@ -178,7 +180,7 @@ class PyInstaller(PythonExectable):
             return None
         except Exception as e:
             print("[-] Exception occured while trying to get the encryption key.")
-            print("[-] Error message: {0}".format(e.message))
+            print("[-] Error message: {0}".format(e))
             sys.exit(1)
         finally:
             if os.path.exists(encrypted_key_path_pyc):
@@ -210,7 +212,7 @@ class PyInstaller(PythonExectable):
                     decrypted_pyc_file.close()
                 except Exception as e:
                     print("[-] Exception occured during pyc decryption and decompiling")
-                    print("[-] Error message: {0}".format(e.message))
+                    print("[-] Error message: {0}".format(e))
                     sys.exit(1)
         
         try:
