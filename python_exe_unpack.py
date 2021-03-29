@@ -82,7 +82,7 @@ class PythonExectable(object):
 
     @staticmethod
     def decompile_pyc(dir_decompiled, pyc_files, output_file=None):
-        return uncompyle6.main.main(dir_decompiled, dir_decompiled, pyc_files, None, output_file)
+        return uncompyle6.main.main(dir_decompiled, dir_decompiled, pyc_files, [], output_file)
         # uncompyle6.main.main(dir_decompiled, dir_decompiled, pyc_files, None, None, None, False, False, False, False, False)
 
 
