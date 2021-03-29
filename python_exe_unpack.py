@@ -133,6 +133,10 @@ class PyInstaller(PythonExectable):
 
     def __init__(self, path, output_dir=None):
         super(PyInstaller, self).__init__(path, output_dir)
+        
+        self.entry_points = []
+        self.py_ver = 0
+        
         self.py_inst_archive = pyinstxtractor.PyInstArchive(self.file_path)
         
         # A hack to check the existence of the file
@@ -234,7 +238,7 @@ class PyInstaller(PythonExectable):
     def __pyinstxtractor_extract(self):
         if self.py_inst_archive.getCArchiveInfo():
             self.py_inst_archive.parseTOC()
-            self.py_inst_archive.extractFiles(self.extraction_dir)
+            (self.py_ver, self.entry_points) = self.py_inst_archive.extractFiles(self.extraction_dir)
             print('[*] Successfully extracted pyinstaller exe.')
 
 

@@ -222,7 +222,7 @@ class PyInstArchive:
 
     def extractFiles(self, custom_dir=None):
         print('[+] Beginning extraction...please standby')
-
+        entryPoints = []
         if custom_dir is None:
             extractionDir = os.path.join(os.getcwd(), os.path.basename(self.filePath) + '_extracted')
 
@@ -255,6 +255,7 @@ class PyInstArchive:
                 # s -> ARCHIVE_ITEM_PYSOURCE
                 # Entry point are expected to be python scripts
                 print('[+] Possible entry point: {0}.pyc'.format(entry.name))
+                entryPoints.append(entry.name)
                 self._writePyc(entry.name + '.pyc', data)
 
             elif entry.typeCmprsData == b'M' or entry.typeCmprsData == b'm':
@@ -269,6 +270,7 @@ class PyInstArchive:
                 if entry.typeCmprsData == b'z' or entry.typeCmprsData == b'Z':
                     self._extractPyz(entry.name)
 
+        return (self.pyver,entryPoints)
 
     def _writePyc(self, filename, data):
         with open(filename, 'wb') as pycFile:
