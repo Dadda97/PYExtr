@@ -150,22 +150,20 @@ class PyInstaller(PythonExectable):
         return self.py_inst_archive.checkFile()
 
 
-    def __is_encrypted(self, extracted_binary_path, encrypted_key_path):
-        if os.path.exists(extracted_binary_path) and os.path.exists(encrypted_key_path):
+    def __is_encrypted(self, extracted_binary_path, encrypted_key_path_pyc):
+        if os.path.exists(extracted_binary_path) and os.path.exists(encrypted_key_path_pyc):
             is_decrypt = user_input("[*] Encrypted pyc file is found. Decrypt it? [y/n]")
             if is_decrypt.lower() == "y":
                 return True
         return False
 
 
-    def __get_encryption_key(self, encrypted_key_path):
+    def __get_encryption_key(self, encrypted_key_path_pyc):
         try:
-            encrypted_key_path_pyc = encrypted_key_path + ".pyc" # For some reason uncompyle6 only works with .pyc extension
             print("[*] Taking decryption key from {0}".format(encrypted_key_path_pyc))
-            copyfile(encrypted_key_path, encrypted_key_path_pyc)
             if os.path.exists(encrypted_key_path_pyc):
-                encrypted_key_path_py = encrypted_key_path + ".py"
-                (total, okay, failed, verify_failed) = PythonExectable.decompile_pyc(None, [encrypted_key_path_pyc], encrypted_key_path_py)
+                encrypted_key_path_py = encrypted_key_path_pyc[:-4] + ".py"
+                (total, okay, failed, verify_failed) = PythonExectable.decompile_pyc(self.extraction_dir, [encrypted_key_path_pyc], encrypted_key_path_py)
                 print("[*] Looking for key inside the .pyc...")
                 if failed == 0 and verify_failed == 0:
                     from configparser import ConfigParser
@@ -183,8 +181,6 @@ class PyInstaller(PythonExectable):
             print("[-] Error message: {0}".format(e))
             sys.exit(1)
         finally:
-            if os.path.exists(encrypted_key_path_pyc):
-                os.remove(encrypted_key_path_pyc)
             if os.path.exists(encrypted_key_path_py):
                 os.remove(encrypted_key_path_py)
 
@@ -227,10 +223,10 @@ class PyInstaller(PythonExectable):
     # To deal with encrypted pyinstaller binary if it's encrypted
     def __decrypt(self):
         extracted_binary_path = self.extraction_dir
-        encrypted_key_path = os.path.join(extracted_binary_path, "pyimod00_crypto_key") 
+        encrypted_key_path_pyc = os.path.join(extracted_binary_path, "pyimod00_crypto_key.pyc") 
 
-        if self.__is_encrypted(extracted_binary_path, encrypted_key_path) == True:
-            encryption_key = self.__get_encryption_key(encrypted_key_path)
+        if self.__is_encrypted(extracted_binary_path, encrypted_key_path_pyc) == True:
+            encryption_key = self.__get_encryption_key(encrypted_key_path_pyc)
             if encryption_key is not None:
                 self.__decrypt_pyc(extracted_binary_path, encryption_key)
         else:
