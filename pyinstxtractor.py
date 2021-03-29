@@ -73,13 +73,7 @@ import zlib
 import sys
 from uuid import uuid4 as uniquename
 
-# imp is deprecated in Python3 in favour of importlib
-if sys.version_info.major == 3:
-    from importlib.util import MAGIC_NUMBER
-    pyc_magic = MAGIC_NUMBER
-else:
-    import imp
-    pyc_magic = imp.get_magic()
+
 
 
 class CTOCEntry:
@@ -274,16 +268,16 @@ class PyInstArchive:
 
     def _writePyc(self, filename, data):
         with open(filename, 'wb') as pycFile:
-            pycFile.write(pyc_magic)            # pyc magic
+#            pycFile.write(pyc_magic)            # pyc magic
+#
+#            if self.pyver >= 37:                # PEP 552 -- Deterministic pycs
+#                pycFile.write(b'\0' * 4)        # Bitfield
+#                pycFile.write(b'\0' * 8)        # (Timestamp + size) || hash 
 
-            if self.pyver >= 37:                # PEP 552 -- Deterministic pycs
-                pycFile.write(b'\0' * 4)        # Bitfield
-                pycFile.write(b'\0' * 8)        # (Timestamp + size) || hash 
-
-            else:
-                pycFile.write(b'\0' * 4)      # Timestamp
-                if self.pyver >= 33:
-                    pycFile.write(b'\0' * 4)  # Size parameter added in Python 3.3
+#            else:
+#                pycFile.write(b'\0' * 4)      # Timestamp
+#                if self.pyver >= 33:
+#                    pycFile.write(b'\0' * 4)  # Size parameter added in Python 3.3
 
             pycFile.write(data)
 

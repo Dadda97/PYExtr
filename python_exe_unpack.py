@@ -229,9 +229,20 @@ class PyInstaller(PythonExectable):
             encryption_key = self.__get_encryption_key(encrypted_key_path_pyc)
             if encryption_key is not None:
                 self.__decrypt_pyc(extracted_binary_path, encryption_key)
-        else:
-            sys.exit()
+    def getPYCHeader(self):
+        header = b''
+        header = b'\xEE\x0C\x0D\x0A'  # pyc magic 3.4 FOR NOW HARD CODED TO BE DONE!!!!
 
+        if self.py_ver >= 37:               # PEP 552 -- Deterministic pycs
+            header += b'\0' * 4        # Bitfield
+            header += b'\0' * 8        # (Timestamp + size) || hash 
+
+        else:
+            header += b'\0' * 4      # Timestamp
+            if self.py_ver >= 33:
+                header += b'\0' * 4  # Size parameter added in Python 3.3
+        
+        return header
 
     def __pyinstxtractor_extract(self):
         if self.py_inst_archive.getCArchiveInfo():
