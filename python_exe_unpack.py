@@ -155,6 +155,10 @@ class PyInstaller(PythonExectable):
             is_decrypt = user_input("[*] Encrypted pyc file is found. Decrypt it? [y/n]")
             if is_decrypt.lower() == "y":
                 return True
+            else:
+                print("[!] Not implemented yet") #TO BE DONE
+                sys.exit()
+                
         return False
 
 
@@ -229,6 +233,9 @@ class PyInstaller(PythonExectable):
             encryption_key = self.__get_encryption_key(encrypted_key_path_pyc)
             if encryption_key is not None:
                 self.__decrypt_pyc(extracted_binary_path, encryption_key)
+        #else:
+        #   TO BE DONE
+
     def getPYCHeader(self):
         header = b''
         header = b'\xEE\x0C\x0D\x0A'  # pyc magic 3.4 FOR NOW HARD CODED TO BE DONE!!!!
