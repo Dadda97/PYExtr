@@ -300,13 +300,6 @@ class PyInstArchive:
 
             pycHeader = f.read(4) # Python magic value
 
-            # Skip PYZ extraction if not running under the same python version
-            if pyc_magic != pycHeader:
-                print('[!] Warning: This script is running in a different Python version than the one used to build the executable.')
-                print('[!] Please run this script in Python{0} to prevent extraction errors during unmarshalling'.format(self.pyver))
-                print('[!] Skipping pyz extraction')
-                return
-
             (tocPosition, ) = struct.unpack('!i', f.read(4))
             f.seek(tocPosition, os.SEEK_SET)
 
