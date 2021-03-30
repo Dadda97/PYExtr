@@ -10,6 +10,7 @@ import os
 import struct
 import abc
 import argparse
+import shutil
 
 import pefile
 import pyinstxtractor
@@ -49,6 +50,8 @@ class PythonExectable(object):
         
         if not os.path.exists(self.extraction_dir):
             os.makedirs(self.extraction_dir)
+        else:
+            shutil.rmtree(self.extraction_dir, ignore_errors=True)
 
 
     def open_executable(self):
