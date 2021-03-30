@@ -58,6 +58,9 @@ class PythonExectable(object):
         if not os.path.exists(self.with_header_pycs_dir):
            os.makedirs(self.with_header_pycs_dir)
 
+        self.py_sources_dir = os.path.join(self.extraction_dir, "sources")
+        
+
     def open_executable(self):
         try:
             if not os.path.exists(self.file_path):
@@ -88,8 +91,8 @@ class PythonExectable(object):
 
 
     @staticmethod
-    def decompile_pyc(dir_decompiled, pyc_files, output_file=None):
-        return uncompyle6.main.main(dir_decompiled, dir_decompiled, pyc_files, [], output_file)
+    def decompile_pyc(dir_compiled, dir_decompiled, pyc_files, output_file=None):
+        return uncompyle6.main.main(dir_compiled, dir_decompiled, pyc_files, [], output_file)
         # uncompyle6.main.main(dir_decompiled, dir_decompiled, pyc_files, None, None, None, False, False, False, False, False)
 
 
@@ -174,7 +177,7 @@ class PyInstaller(PythonExectable):
             print("[*] Taking decryption key from {0}".format(encrypted_key_path_pyc))
             if os.path.exists(encrypted_key_path_pyc):
                 encrypted_key_path_py = encrypted_key_path_pyc[:-4] + ".py"
-                (total, okay, failed, verify_failed) = PythonExectable.decompile_pyc(self.extraction_dir, [encrypted_key_path_pyc], encrypted_key_path_py)
+                (total, okay, failed, verify_failed) = PythonExectable.decompile_pyc(self.extraction_dir,self.extraction_dir, [encrypted_key_path_pyc], encrypted_key_path_py)
                 print("[*] Looking for key inside the .pyc...")
                 if failed == 0 and verify_failed == 0:
                     from configparser import ConfigParser
@@ -268,6 +271,14 @@ class PyInstaller(PythonExectable):
                 pycFile.close()
                 pycNoHeaderFile.close() 
     
+    def __decompile_all_PYCs(self):
+        shutil.copytree(self.with_header_pycs_dir, self.py_sources_dir)          # TODO: undestand how uncompyle6 redirect the output files
+        PYCs_list = glob.glob(self.py_sources_dir + '/**/*.pyc', recursive = True)  
+        PythonExectable.decompile_pyc(self.py_sources_dir, self.py_sources_dir, PYCs_list)
+        for pyc_file in PYCs_list:
+            os.remove(pyc_file)
+
+
     def __pyinstxtractor_extract(self):
         if self.py_inst_archive.getCArchiveInfo():
             self.py_inst_archive.parseTOC()
@@ -280,6 +291,7 @@ class PyInstaller(PythonExectable):
         self.__pyinstxtractor_extract()
         self.__decrypt()
         self.__prepend_header_to_all_PYCs()
+        self.__decompile_all_PYCs()
         print("[+] Binary unpacked successfully")
 
 
@@ -323,7 +335,7 @@ class Py2Exe(PythonExectable):
         if not is_error:
             folder_count = len(os.listdir(self.extraction_dir))
             if folder_count >= 1:
-                PythonExectable.decompile_pyc(self.extraction_dir, PythonExectable.current_dir_pyc_files(self.extraction_dir))
+                PythonExectable.decompile_pyc(self.extraction_dir, self.extraction_dir, PythonExectable.current_dir_pyc_files(self.extraction_dir))
             else:
                 print("[-] Error in unpacking the binary")
                 sys.exit(1)
@@ -360,7 +372,7 @@ class MagicPrepend():
                     prepend_pyc.write(pyc_data.read())
                     pyc_data.close()
 
-            (total, okay, failed, verify_failed) = PythonExectable.decompile_pyc(None, [edited_pyc.name], edited_py_name)
+            (total, okay, failed, verify_failed) = PythonExectable.decompile_pyc(None, None, [edited_pyc.name], edited_py_name)
             if failed == 0 and verify_failed == 0:
                 print("[+] Successfully decompiled.")
             else:
