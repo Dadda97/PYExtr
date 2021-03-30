@@ -195,33 +195,22 @@ class PyInstaller(PythonExectable):
         import zlib
         crypt_block_size = 16
         encrypted_pyc_folder = os.path.join(extracted_binary_path, "out00-PYZ.pyz_extracted")
-        encrypted_pyc_list = os.listdir(encrypted_pyc_folder)
-        for x, file_name in enumerate(encrypted_pyc_list):
-            # File that is decrypted will end with pyc and file with py extension will not be bothered as well
-            if ".pyc.encrypted.pyc" not in file_name and ".pyc.encrypted.py" not in file_name and ".pyc.encrypted" in file_name:
-                try:
-                    encrypted_pyc = os.path.join(encrypted_pyc_folder, file_name)
-                    encrypted_pyc_file = open(encrypted_pyc, 'rb')
-                    decrypted_pyc_file = open(encrypted_pyc + ".pyc", 'wb')
-                    initialization_vector = encrypted_pyc_file.read(crypt_block_size)
-                    cipher = AES.new(encryption_key.encode(), AES.MODE_CFB, initialization_vector)
-                    plaintext = zlib.decompress(cipher.decrypt(encrypted_pyc_file.read()))
-                    decrypted_pyc_file.write(b'\x03\xf3\x0d\x0a\0\0\0\0')
-                    decrypted_pyc_file.write(plaintext)
-                    encrypted_pyc_file.close()
-                    decrypted_pyc_file.close()
-                except Exception as e:
-                    print("[-] Exception occured during pyc decryption and decompiling")
-                    print("[-] Error message: {0}".format(e))
-                    sys.exit(1)
-        
-        try:
-            PythonExectable.decompile_pyc(encrypted_pyc_folder, PythonExectable.current_dir_pyc_files(encrypted_pyc_folder))
-        finally:
-            for x, file_name in enumerate(PythonExectable.current_dir_pyc_files(encrypted_pyc_folder)):
-                full_path = os.path.join(encrypted_pyc_folder, file_name)
-                if os.path.exists(full_path):
-                    os.remove(full_path)
+        encrypted_pyc_list =  glob.glob(encrypted_pyc_folder + '/**/*.pyc.encrypted', recursive = True) 
+        for file_name in encrypted_pyc_list:
+            try:
+                encrypted_pyc = os.path.join(encrypted_pyc_folder, file_name)
+                encrypted_pyc_file = open(encrypted_pyc, 'rb')
+                decrypted_pyc_file = open(encrypted_pyc[:encrypted_pyc.rfind('.')], 'wb')
+                initialization_vector = encrypted_pyc_file.read(crypt_block_size)
+                cipher = AES.new(encryption_key.encode(), AES.MODE_CFB, initialization_vector)
+                plaintext = zlib.decompress(cipher.decrypt(encrypted_pyc_file.read()))
+                decrypted_pyc_file.write(plaintext)
+                encrypted_pyc_file.close()
+                decrypted_pyc_file.close()
+            except Exception as e:
+                print("[-] Exception occured during pyc decryption and decompiling")
+                print("[-] Error message: {0}".format(e))
+                sys.exit(1)
 
 
     # To deal with encrypted pyinstaller binary if it's encrypted
