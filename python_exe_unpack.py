@@ -10,6 +10,7 @@ import os
 import struct
 import abc
 import argparse
+import glob
 import shutil
 
 import pefile
@@ -52,7 +53,10 @@ class PythonExectable(object):
             os.makedirs(self.extraction_dir)
         else:
             shutil.rmtree(self.extraction_dir, ignore_errors=True)
-
+        
+        self.with_header_pycs_dir = os.path.join(self.extraction_dir, "with_header_pycs")
+        if not os.path.exists(self.with_header_pycs_dir):
+           os.makedirs(self.with_header_pycs_dir)
 
     def open_executable(self):
         try:
@@ -243,6 +247,27 @@ class PyInstaller(PythonExectable):
         
         return header
 
+
+    def __prepend_header_to_all_PYCs(self):
+        PYCs_list = glob.glob(self.extraction_dir + '/**/*.pyc', recursive = True)
+        PYCHeader = self.getPYCHeader()     
+        print('[*] Prepending {0} header to {1} .pyc files:'.format(PYCHeader, len(PYCs_list)))
+        for file_name in PYCs_list:
+            rel_file_name = file_name[len(self.extraction_dir):]
+            rel_file_dir = rel_file_name[:rel_file_name.rfind('/')]
+            if not os.path.exists(self.with_header_pycs_dir + rel_file_dir):
+                os.makedirs(self.with_header_pycs_dir + rel_file_dir)
+            with open(file_name, 'rb') as pycNoHeaderFile, open(self.with_header_pycs_dir  + rel_file_name  , 'wb') as pycFile:
+                first_fours = pycNoHeaderFile.read(4)
+                if not (first_fours == PYCHeader[:4]):
+                    pycFile.write(PYCHeader)
+                else:
+                    print("[*] Skipping prepend on {0}".format(rel_file_name))  
+                pycFile.write(first_fours)
+                pycFile.write(pycNoHeaderFile.read())  
+                pycFile.close()
+                pycNoHeaderFile.close() 
+    
     def __pyinstxtractor_extract(self):
         if self.py_inst_archive.getCArchiveInfo():
             self.py_inst_archive.parseTOC()
@@ -254,6 +279,7 @@ class PyInstaller(PythonExectable):
         print("[*] Unpacking the binary now")
         self.__pyinstxtractor_extract()
         self.__decrypt()
+        self.__prepend_header_to_all_PYCs()
         print("[+] Binary unpacked successfully")
 
 
