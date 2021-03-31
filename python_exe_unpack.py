@@ -230,6 +230,7 @@ class PyInstaller(PythonExectable):
 
         if self.__is_encrypted(extracted_binary_path, encrypted_key_path_pyc) == True:
             encryption_key = self.__get_encryption_key(encrypted_key_path_pyc)
+            print("[*] AES key found: {0}".format(encryption_key) )
             if encryption_key is not None:
                 self.__decrypt_pyc(extracted_binary_path, encryption_key)
         #else:
