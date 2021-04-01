@@ -238,7 +238,23 @@ class PyInstaller(PythonExectable):
 
     def getPYCHeader(self):
         header = b''
-        header = b'\xEE\x0C\x0D\x0A'  # pyc magic 3.4 FOR NOW HARD CODED TO BE DONE!!!!
+        candidates_header_files = glob.glob(self.extraction_dir + '/pyimod0*.pyc')
+        print(self.extraction_dir)
+        n_candidates = len(candidates_header_files)
+        if n_candidates == 0:
+            print("[!] No candidates files for extracting the PYC header")
+            sys.exit(1)
+
+        for n,candidate in enumerate(candidates_header_files):
+            (total, okay, failed, verify_failed) = PythonExectable.decompile_pyc(self.extraction_dir,self.extraction_dir, [candidate], "temp_header.py")
+            if okay:
+                with open(candidate, 'rb') as candidate_file:
+                    header = candidate_file.read(4)
+                    candidate_file.close()
+                    break
+            if n == n_candidates:
+                print("[!] No candidates files for extracting the PYC header is valid")
+                sys.exit(1)
 
         if self.py_ver >= 37:               # PEP 552 -- Deterministic pycs
             header += b'\0' * 4        # Bitfield
