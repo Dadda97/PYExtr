@@ -290,7 +290,7 @@ class PyInstaller(PythonExectable):
     
     def __decompile_all_PYCs(self):
         shutil.copytree(self.with_header_pycs_dir, self.py_sources_dir)          # TODO: undestand how uncompyle6 redirect the output files
-        PYCs_list = glob.glob(self.py_sources_dir + '/**/*.pyc', recursive = True)  
+        PYCs_list = glob.glob(self.py_sources_dir + '/*.pyc',)  
         PythonExectable.decompile_pyc(self.py_sources_dir, self.py_sources_dir, PYCs_list)
         for pyc_file in PYCs_list:
             os.remove(pyc_file)
