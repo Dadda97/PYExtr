@@ -205,7 +205,7 @@ class PyInstaller(PythonExectable):
         import zlib
         crypt_block_size = 16
         encrypted_pyc_folder = os.path.join(extracted_binary_path, "out00-PYZ.pyz_extracted")
-        encrypted_pyc_list =  glob.glob(encrypted_pyc_folder + '/**/*.pyc.encrypted', recursive = True) 
+        encrypted_pyc_list =  glob.glob(encrypted_pyc_folder + '/*.pyc.encrypted') 
         for file_name in encrypted_pyc_list:
             try:
                 encrypted_pyc = os.path.join(encrypted_pyc_folder, file_name)
@@ -269,7 +269,7 @@ class PyInstaller(PythonExectable):
 
 
     def __prepend_header_to_all_PYCs(self):
-        PYCs_list = glob.glob(self.extraction_dir + '/**/*.pyc', recursive = True)
+        PYCs_list = glob.glob(self.extraction_dir + '/*.pyc')
         PYCHeader = self.getPYCHeader()     
         print('[*] Prepending {0} header to {1} .pyc files:'.format(PYCHeader, len(PYCs_list)))
         for file_name in PYCs_list:
@@ -288,13 +288,17 @@ class PyInstaller(PythonExectable):
                 pycFile.close()
                 pycNoHeaderFile.close() 
     
-    def __decompile_all_PYCs(self):
-        shutil.copytree(self.with_header_pycs_dir, self.py_sources_dir)          # TODO: undestand how uncompyle6 redirect the output files
-        PYCs_list = glob.glob(self.py_sources_dir + '/*.pyc',)  
-        PythonExectable.decompile_pyc(self.py_sources_dir, self.py_sources_dir, PYCs_list)
-        for pyc_file in PYCs_list:
-            os.remove(pyc_file)
-
+    def __decompile_entry_PYCs(self):
+        PYCs_list = []
+        backup_PYCs = []
+        for entry in self.entry_points:
+            if not "pyi" in entry:
+                PYCs_list.append(entry+".pyc")
+            else:   # in case original script contains pyi in filename
+                backup_PYCs.append(entry+".pyc")  
+        if len(PYCs_list) == 0:
+            PYCs_list = backup_PYCs
+        PythonExectable.decompile_pyc(self.with_header_pycs_dir, self.py_sources_dir, PYCs_list)
 
     def __pyinstxtractor_extract(self):
         if self.py_inst_archive.getCArchiveInfo():
@@ -302,13 +306,12 @@ class PyInstaller(PythonExectable):
             (self.py_ver, self.entry_points) = self.py_inst_archive.extractFiles(self.extraction_dir)
             print('[*] Successfully extracted pyinstaller exe.')
 
-
     def unpacked(self, filename):
         print("[*] Unpacking the binary now")
         self.__pyinstxtractor_extract()
         self.__decrypt()
         self.__prepend_header_to_all_PYCs()
-        self.__decompile_all_PYCs()
+        self.__decompile_entry_PYCs()
         print("[+] Binary unpacked successfully")
 
 
