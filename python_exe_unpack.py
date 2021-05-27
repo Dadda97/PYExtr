@@ -357,69 +357,16 @@ class Py2Exe(PythonExectable):
                 print("[-] Error in unpacking the binary")
                 sys.exit(1)
 
-
-class MagicPrepend():
-    # Occasionaly, the main python file that is packed with pyinstaller might not be easily decompiled. This will need to prepend magic bytes into it.
-    def prepend(self, main_pyc):
-        import tempfile
-
-        is_prepend_magic = True
-        edited_py_name = main_pyc + ".py"
-        edited_pyc = tempfile.NamedTemporaryFile(mode='wb',suffix='.pyc',delete=False)
-        try:
-            if not os.path.exists(main_pyc):
-                raise FileNotFoundException
-
-            # Check if this pyc file is prepended with recognize magic bytes already.
-            with open(main_pyc, 'rb') as tmp_pyc:
-                from xdis import magics
-                py_ver_num = magics.magic2int(tmp_pyc.read(4))
-                for key in magics.versions:
-                    if magics.magic2int(key) == py_ver_num:
-                        print("[+] Magic bytes is already appeneded.")
-                        is_prepend_magic = False
-                copyfile(main_pyc, edited_pyc.name)
-
-            if is_prepend_magic:
-                magic = b'\x03\xf3\x0d\x0a' # Default magic for python 2.7
-                with edited_pyc as prepend_pyc:
-                    pyc_data = open(main_pyc, 'rb')
-                    prepend_pyc.write(magic) # Magic bytes 
-                    prepend_pyc.write(b'\0' * 4) # Time stamp
-                    prepend_pyc.write(pyc_data.read())
-                    pyc_data.close()
-
-            (total, okay, failed, verify_failed) = PythonExectable.decompile_pyc(None, None, [edited_pyc.name], edited_py_name)
-            if failed == 0 and verify_failed == 0:
-                print("[+] Successfully decompiled.")
-            else:
-                print("[-] Unable to decompile the pyc file. (Probably is already decompiled?)")
-                if os.path.exists(edited_py_name):
-                    os.remove(edited_py_name)
-                sys.exit(1)
-
-        except FileNotFoundException:
-            print("[-] pyc file not found. Ignoring it now.")
-            sys.exit(1)
-        finally:
-            if os.path.exists(edited_pyc.name):
-                os.remove(edited_pyc.name)
-
-
 def main():
     parser = argparse.ArgumentParser(description="This program will detect, unpack and decompile binary that is packed in either py2exe or pyinstaller. (Use only one option)")
     parser.add_argument("-i", dest="input" ,required=False, help="exe that is packed using py2exe or pyinstaller")
     parser.add_argument("-o", dest="output" ,required=False, help="folder to store your unpacked and decompiled code. (Otherwise will default to current working directory and inside the folder\"unpacked\")")
-    parser.add_argument("-p", dest="prepend" ,required=False, help="Option that prepend pyc without magic bytes. (Usually for pyinstaller main python file)")
     args = parser.parse_args()
 
-    prepend_file = args.prepend
     file_name = args.input
     output_dir = args.output
 
-    if prepend_file is not None and file_name is not None:
-        print("[-] Only one option is allowed")
-    elif prepend_file is None and file_name is not None:
+    if file_name is not None:
         pyinstaller = PyInstaller(file_name, output_dir)
         py2exe = Py2Exe(file_name, output_dir)
 
@@ -436,9 +383,6 @@ def main():
         pyinstaller.close()
         py2exe.close()
 
-    elif prepend_file is not None and file_name is None:
-        magic_prepend = MagicPrepend()
-        magic_prepend.prepend(prepend_file)
     else:
         parser.print_help()
         
