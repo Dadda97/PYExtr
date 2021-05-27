@@ -4,6 +4,7 @@ import argparse
 import os
 from os import listdir
 from os.path import isfile, join
+import python_exe_unpack
 
 class PYExtr(ast.NodeVisitor):
     # Thanks to mortbauer's answer
@@ -68,6 +69,7 @@ if __name__ == "__main__":
     parser.add_argument("-q", "--quiet", action="store_true", help='doesn\'t show the results on the STDOUT')
 
     args = parser.parse_args()
+    args.input = os.path.abspath(args.input)
     files = []
     if(os.path.isfile(args.input)):
         
@@ -77,10 +79,16 @@ if __name__ == "__main__":
             for file in files:
                 files.append(join(root,file))
     res = {}
-    for file in files:    
-        with open(file) as input_file:
-            py_script = input_file.read()
-            input_file.close()
+    for file in files:
+        print(file)
+        python_exe_unpack.__handle(file) 
+        source_dir= join(os.path.dirname(file),"sources",os.path.basename(file))
+        py_files = [join(source_dir, f) for f in listdir(source_dir) if (isfile(join(source_dir, f)) and '.py' in f)]
+        py_script = ""
+        for py_file in py_files:
+            with open(py_file) as input_file:
+                py_script += input_file.read()
+                input_file.close()
 
         module = ast.parse(py_script)
         py_extr = PYExtr()

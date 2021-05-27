@@ -18,8 +18,10 @@ import pyinstxtractor
 import uncompyle6
 from unpy2exe import unpy2exe
 
+import tempfile
+
 DEV_NULL = open(os.devnull, "wb")
-UNPACKED_FOLDER_NAME = "unpacked"
+UNPACKED_FOLDER_NAME = tempfile.gettempdir()
 
 def user_input(message):
     if sys.version[0] == "3":
@@ -365,7 +367,26 @@ class Py2Exe(PythonExectable):
                 print("[-] Error in unpacking the binary")
                 sys.exit(1)
 
-def main():
+def __handle(file_name, output_dir = None):
+    pyinstaller = PyInstaller(file_name, output_dir)
+    py2exe = Py2Exe(file_name, output_dir)
+
+    if py2exe.is_magic_recognised():
+        print('[*] This exe is packed using py2exe')
+        py2exe.unpacked(file_name)
+    elif pyinstaller.is_magic_recognised():
+        print('[*] This exe is packed using pyinstaller')
+        pyinstaller.unpacked(file_name)
+    else:
+        print('[-] Sorry, can\'t tell what is this packed with')
+
+    # Close all the open file
+    pyinstaller.close()
+    py2exe.close()
+        
+
+if __name__ == '__main__':
+    print("[*] On Python " + str(sys.version_info.major) + "." + str(sys.version_info.minor))
     parser = argparse.ArgumentParser(description="This program will detect, unpack and decompile binary that is packed in either py2exe or pyinstaller. (Use only one option)")
     parser.add_argument("-i", dest="input" ,required=False, help="exe that is packed using py2exe or pyinstaller")
     parser.add_argument("-o", dest="output" ,required=False, help="folder to store your unpacked and decompiled code. (Otherwise will default to current working directory and inside the folder\"unpacked\")")
@@ -375,26 +396,7 @@ def main():
     output_dir = args.output
 
     if file_name is not None:
-        pyinstaller = PyInstaller(file_name, output_dir)
-        py2exe = Py2Exe(file_name, output_dir)
-
-        if py2exe.is_magic_recognised():
-            print('[*] This exe is packed using py2exe')
-            py2exe.unpacked(file_name)
-        elif pyinstaller.is_magic_recognised():
-            print('[*] This exe is packed using pyinstaller')
-            pyinstaller.unpacked(file_name)
-        else:
-            print('[-] Sorry, can\'t tell what is this packed with')
-
-        # Close all the open file
-        pyinstaller.close()
-        py2exe.close()
+        __handle(file_name, output_dir)
 
     else:
         parser.print_help()
-        
-
-if __name__ == '__main__':
-    print("[*] On Python " + str(sys.version_info.major) + "." + str(sys.version_info.minor))
-    main()
