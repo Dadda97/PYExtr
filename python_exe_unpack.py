@@ -58,8 +58,9 @@ class PythonExectable(object):
         if not os.path.exists(self.with_header_pycs_dir):
            os.makedirs(self.with_header_pycs_dir)
 
-        self.py_sources_dir = os.path.join(self.extraction_dir, "sources")
-        
+        self.py_sources_dir = os.path.join(os.path.dirname(self.file_path), "sources", os.path.basename(self.file_path))
+        if not os.path.exists(self.py_sources_dir):
+           os.makedirs(self.py_sources_dir)
 
     def open_executable(self):
         try:
