@@ -23,12 +23,6 @@ import tempfile
 DEV_NULL = open(os.devnull, "wb")
 UNPACKED_FOLDER_NAME = tempfile.gettempdir()
 
-def user_input(message):
-    if sys.version[0] == "3":
-        return input(message)
-    else:
-        return raw_input(message)
-
 logging = True
 print_or = print
 
@@ -175,15 +169,8 @@ class PyInstaller(PythonExectable):
 
 
     def __is_encrypted(self, extracted_binary_path, encrypted_key_path_pyc):
-        if os.path.exists(extracted_binary_path) and os.path.exists(encrypted_key_path_pyc):
-            is_decrypt = user_input("[*] Encrypted pyc file is found. Decrypt it? [y/n]")
-            if is_decrypt.lower() == "y":
-                return True
-            else:
-                print("[!] Not implemented yet") #TO BE DONE
-                sys.exit()
-                
-        return False
+        return  os.path.exists(extracted_binary_path) and os.path.exists(encrypted_key_path_pyc)
+               
 
 
     def __get_encryption_key(self, encrypted_key_path_pyc):
