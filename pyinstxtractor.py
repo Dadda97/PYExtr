@@ -73,6 +73,13 @@ import zlib
 import sys
 from uuid import uuid4 as uniquename
 
+logging = True
+print_or = print
+
+def print(str):
+    global logging
+    if logging:
+        print_or(str)
 
 class PYInstxtractorError(Exception):
     def __init__(self, message):
@@ -94,7 +101,9 @@ class PyInstArchive:
     PYINST21_COOKIE_SIZE = 24 + 64      # For pyinstaller 2.1+
     MAGIC = b'MEI\014\013\012\013\016'  # Magic number which identifies pyinstaller
 
-    def __init__(self, path):
+    def __init__(self, path, log_enable = False):
+        global logging
+        logging = log_enable
         self.filePath = path
 
 

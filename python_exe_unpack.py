@@ -29,6 +29,14 @@ def user_input(message):
     else:
         return raw_input(message)
 
+logging = True
+print_or = print
+
+def print(str):
+    global logging
+    if logging:
+        print_or(str)
+
 class python_exe_unpackError(Exception):
     def __init__(self, message):
         self.message = message
@@ -97,6 +105,7 @@ class PythonExectable(object):
 
     @staticmethod
     def decompile_pyc(dir_compiled, dir_decompiled, pyc_files, output_file=None):
+
         return uncompyle6.main.main(dir_compiled, dir_decompiled, pyc_files, [], output_file)
         # uncompyle6.main.main(dir_decompiled, dir_decompiled, pyc_files, None, None, None, False, False, False, False, False)
 
@@ -365,7 +374,10 @@ class Py2Exe(PythonExectable):
                 print("[-] Error in unpacking the binary")
                 sys.exit(1)
 
-def __handle(file_name, output_dir = None):
+def __handle(file_name, output_dir = None, log_enable = False):
+    
+    global logging 
+    logging = log_enable
     pyinstaller = PyInstaller(file_name, output_dir)
     py2exe = Py2Exe(file_name, output_dir)
 
