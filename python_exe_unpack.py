@@ -4,7 +4,6 @@ Author: In Ming Loh
 Email: inming.loh@countercept.com
 '''
 from __future__ import print_function
-from shutil import copyfile
 import sys
 import os
 import struct
