@@ -29,6 +29,10 @@ def user_input(message):
     else:
         return raw_input(message)
 
+class python_exe_unpackError(Exception):
+    def __init__(self, message):
+        self.message = message
+        super().__init__(self.message)
 
 class FileNotFoundException(Exception):
     """Raised when binary is not found"""
@@ -76,14 +80,12 @@ class PythonExectable(object):
             self.fPtr = open(self.file_path, 'rb')
             self.fileSize = os.stat(self.file_path).st_size
         except FileFormatException:
-            print("[-] Not an executable")
-            sys.exit(1)
+            raise python_exe_unpackError("Not an executable")
+            
         except FileNotFoundException:
-            print("[-] No such file")
-            sys.exit(1)
-        except:
-            print("[-] Error: Could not open {0}".format(self.file_path))
-            sys.exit(1)       
+            raise python_exe_unpackError("File not found")
+        except Exception as e:
+            raise e
 
 
     def close(self):
@@ -194,9 +196,7 @@ class PyInstaller(PythonExectable):
                     return encryption_key
             return None
         except Exception as e:
-            print("[-] Exception occured while trying to get the encryption key.")
-            print("[-] Error message: {0}".format(e))
-            sys.exit(1)
+            raise python_exe_unpackError(f"Exception occured while trying to get the encryption key.\n{e}")
         finally:
             if os.path.exists(encrypted_key_path_py):
                 os.remove(encrypted_key_path_py)
@@ -221,9 +221,8 @@ class PyInstaller(PythonExectable):
                 encrypted_pyc_file.close()
                 decrypted_pyc_file.close()
             except Exception as e:
-                print("[-] Exception occured during pyc decryption and decompiling")
-                print("[-] Error message: {0}".format(e))
-                sys.exit(1)
+                raise python_exe_unpackError(f"Exception occured during pyc decryption and decompiling\n{e}")
+                
 
 
     # To deal with encrypted pyinstaller binary if it's encrypted
@@ -245,8 +244,8 @@ class PyInstaller(PythonExectable):
         print(self.extraction_dir)
         n_candidates = len(candidates_header_files)
         if n_candidates == 0:
-            print("[!] No candidates files for extracting the PYC header")
-            sys.exit(1)
+            raise python_exe_unpackError("No candidates files for extracting the PYC header")
+            
 
         for n,candidate in enumerate(candidates_header_files):
             (total, okay, failed, verify_failed) = PythonExectable.decompile_pyc(self.extraction_dir,self.extraction_dir, [candidate], "temp_header.py")
@@ -256,8 +255,7 @@ class PyInstaller(PythonExectable):
                     candidate_file.close()
                     break
             if n == n_candidates:
-                print("[!] No candidates files for extracting the PYC header is valid")
-                sys.exit(1)
+                raise python_exe_unpackError("No candidates files for extracting the PYC header is valid")
 
         if self.py_ver >= 37:               # PEP 552 -- Deterministic pycs
             header += b'\0' * 4        # Bitfield

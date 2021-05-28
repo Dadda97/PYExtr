@@ -72,7 +72,6 @@ if __name__ == "__main__":
     args.input = os.path.abspath(args.input)
     files = []
     if(os.path.isfile(args.input)):
-        
         files.append(args.input)
     else:  
         for root, _, dir_files in os.walk(args.input):
@@ -82,7 +81,14 @@ if __name__ == "__main__":
     res = {}
     for file in files:
         print(file)
-        python_exe_unpack.__handle(file) 
+        try:
+            python_exe_unpack.__handle(file) 
+        except Exception as e:
+            res[file] = {
+                "error" : str(e)
+            }
+            continue
+
         source_dir= join(os.path.dirname(file),"sources",os.path.basename(file))
         py_files = [join(source_dir, f) for f in listdir(source_dir) if (isfile(join(source_dir, f)) and '.py' in f)]
         py_script = ""

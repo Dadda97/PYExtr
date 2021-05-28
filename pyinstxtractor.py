@@ -74,7 +74,10 @@ import sys
 from uuid import uuid4 as uniquename
 
 
-
+class PYInstxtractorError(Exception):
+    def __init__(self, message):
+        self.message = message
+        super().__init__(self.message)
 
 class CTOCEntry:
     def __init__(self, position, cmprsdDataSize, uncmprsdDataSize, cmprsFlag, typeCmprsData, name):
@@ -96,12 +99,10 @@ class PyInstArchive:
 
 
     def open(self):
-        try:
-            self.fPtr = open(self.filePath, 'rb')
-            self.fileSize = os.stat(self.filePath).st_size
-        except:
-            print('[!] Error: Could not open {0}'.format(self.filePath))
-            return False
+        
+        self.fPtr = open(self.filePath, 'rb')
+        self.fileSize = os.stat(self.filePath).st_size
+      
         return True
 
 
@@ -132,8 +133,7 @@ class PyInstArchive:
             self.pyinstVer = 21     # pyinstaller 2.1+
             return True
 
-        print('[!] Error : Unsupported pyinstaller version or not a pyinstaller archive')
-        return False
+        raise PYInstxtractorError('Unsupported pyinstaller version or not a pyinstaller archive')
 
 
     def getCArchiveInfo(self):
@@ -153,8 +153,8 @@ class PyInstArchive:
                 struct.unpack('!8siiii64s', self.fPtr.read(self.PYINST21_COOKIE_SIZE))
 
         except:
-            print('[!] Error : The file is not a pyinstaller archive')
-            return False
+            raise PYInstxtractorError('The file is not a pyinstaller archive')
+
 
         print('[+] Python version: {0}'.format(self.pyver))
 
@@ -300,7 +300,6 @@ class PyInstArchive:
             try:
                 toc = marshal.load(f)
             except:
-                print('[!] Unmarshalling FAILED. Cannot extract {0}. Extracting remaining files.'.format(name))
                 return
 
             print('[+] Found {0} files in PYZ archive'.format(len(toc)))
@@ -337,7 +336,6 @@ class PyInstArchive:
                     data = f.read(length)
                     data = zlib.decompress(data)
                 except:
-                    print('[!] Error: Failed to decompress {0}, probably encrypted. Extracting as is.'.format(filePath))
                     open(filePath + '.encrypted', 'wb').write(data)
                 else:
                     self._writePyc(filePath, data)
