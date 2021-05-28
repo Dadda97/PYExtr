@@ -75,9 +75,10 @@ if __name__ == "__main__":
         files.append(args.input)
     else:  
         for root, _, dir_files in os.walk(args.input):
-            if "." not in root:
+            if "." not in root and root != "sources":
                 for file in dir_files:
-                    files.append(join(root,file))
+                    if ".json" not in file:
+                        files.append(join(root,file))
     res = {}
     for file in files:
         print(file)
