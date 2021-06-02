@@ -37,6 +37,10 @@ class PYExtr(ast.NodeVisitor):
     def visit_FunctionDef(self,node):
         if not hasattr(node,"alreadyVisited"):
             self.functions.append(node.name)
+
+    def visit_AsyncFunctionDef(self,node):
+        if not hasattr(node,"alreadyVisited"):
+            self.functions.append(node.name)
     
     @recursive
     def visit_Import(self,node):
