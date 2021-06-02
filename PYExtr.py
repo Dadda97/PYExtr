@@ -110,7 +110,7 @@ if __name__ == "__main__":
             "imports" : py_extr.imports,
         }
     
-    json_obj =json.dumps(res, indent = 4)
+    json_obj =json.dumps(res, indent = 4, ensure_ascii=False)
     
     if not args.quiet:
         
