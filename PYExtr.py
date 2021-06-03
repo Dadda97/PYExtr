@@ -48,6 +48,11 @@ class PYExtr(ast.NodeVisitor):
             self.imports.append(imp.name)
 
     @recursive
+    def visit_ImportFrom(self,node):
+        self.imports.append(node.module)
+
+
+    @recursive
     def visit_ClassDef(self,node):
         class_name = node.name
         methods = [n for n in node.body if isinstance(n, ast.FunctionDef)]
