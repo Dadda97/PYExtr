@@ -5,6 +5,7 @@ import os
 from os import listdir
 from os.path import isfile, join
 import python_exe_unpack
+import hashlib
 
 class PYExtr(ast.NodeVisitor):
     # Thanks to mortbauer's answer
@@ -14,7 +15,7 @@ class PYExtr(ast.NodeVisitor):
         super().__init__()
 
         self.strings = dict()
-        self.functions = []
+        self.functions = dict()
         self.imports = []
         self.current_class="" 
 
@@ -27,20 +28,49 @@ class PYExtr(ast.NodeVisitor):
         return wrapper
 
     @recursive
-    def visit_Str(self, node):
+    def visit_Str(self, node): 
         if node.value in self.strings:
             self.strings[node.value] += 1
         else:
             self.strings[node.value] = 1
+    
+    def get_node_name(self,node):
+        node_name = type(node).__name__
+        return [node_name] if "FunctionDef" not in node_name and "ClassDef" not in node_name else []
 
+    def get_all_nodes(self,node):
+        child_nodes=  list(ast.iter_child_nodes(node))
+        if len(child_nodes) == 0:
+            return self.get_node_name(node)
+        res = []
+        for child_node in child_nodes:
+             res +=  self.get_all_nodes(child_node)
+        node_name = self.get_node_name(node)
+        return node_name + res
+
+    def get_global_nodes(self, node):
+        child_nodes=  list(ast.iter_child_nodes(node))
+        if len(child_nodes) == 0:
+            return self.get_node_name(node)
+        res = []
+        for child_node in [x for x in child_nodes if len(self.get_node_name(x)) > 0] :
+             res +=  self.get_global_nodes(child_node)
+        node_name = self.get_node_name(node)
+        return node_name + res
+
+    def get_fun_hash(self,node,global_fun = False):
+        nodes = self.get_all_nodes(node) if not global_fun else self.get_global_nodes(node)
+        return hashlib.sha256(("-".join(nodes).encode("UTF-8"))).hexdigest()
+    
     @recursive
     def visit_FunctionDef(self,node):
         if not hasattr(node,"alreadyVisited"):
-            self.functions.append(node.name)
+            self.functions[node.name] = self.get_fun_hash(node)
 
+    @recursive
     def visit_AsyncFunctionDef(self,node):
         if not hasattr(node,"alreadyVisited"):
-            self.functions.append(node.name)
+            self.functions[node.name] = self.get_fun_hash(node)
     
     @recursive
     def visit_Import(self,node):
@@ -57,12 +87,17 @@ class PYExtr(ast.NodeVisitor):
         class_name = node.name
         methods = [n for n in node.body if isinstance(n, ast.FunctionDef)]
         for method in methods:
-            self.functions.append(class_name + "." + method.name)
+            self.functions[class_name + "." + method.name] = self.get_fun_hash(node)
             method.alreadyVisited = True
+
+    @recursive
+    def visit_Module(self,node):
+        self.functions["+global+"] = self.get_fun_hash(node, global_fun = True)
 
     @recursive
     def generic_visit(self,node):
         pass
+
 
 def input_path(string):
     if os.path.isdir(string) or os.path.isfile(string):
