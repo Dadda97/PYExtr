@@ -111,11 +111,10 @@ def input_path(string):
 
 def analyze_file(file):
     res = {}
-    source_dir = ""
-    try:
 
-        source_dir = join(os.getcwd(), "unpacked",
-                          os.path.basename(file), "sources")
+    source_dir = join(os.getcwd(), "unpacked",
+                      os.path.basename(file), "sources")
+    try:
 
         python_exe_unpack.__handle(file)
 
@@ -141,7 +140,8 @@ def analyze_file(file):
             "error": str(e)
         }
     finally:
-        shutil.rmtree(os.path.dirname(source_dir))
+        file_extr_dir = os.path.dirname(source_dir)
+        shutil.rmtree(file_extr_dir)
         return res
 
 

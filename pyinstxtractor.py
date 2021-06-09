@@ -229,6 +229,7 @@ class PyInstArchive:
     def extractFiles(self, custom_dir=None):
         print('[+] Beginning extraction...please standby')
         entryPoints = []
+        original_cwd = os.getcwd()
         if custom_dir is None:
             extractionDir = os.path.join(
                 os.getcwd(), os.path.basename(self.filePath) + '_extracted')
@@ -276,7 +277,7 @@ class PyInstArchive:
 
                 if entry.typeCmprsData == b'z' or entry.typeCmprsData == b'Z':
                     self._extractPyz(entry.name)
-
+        os.chdir(original_cwd)
         return (self.pyver, entryPoints)
 
     def _writePyc(self, filename, data):
