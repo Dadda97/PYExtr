@@ -110,11 +110,14 @@ def input_path(string):
 
 def analyze_file(file):
     res = {}
+    source_dir = ""
     try:
+
+        source_dir = join(os.getcwd(), "unpacked",
+                          os.path.basename(file), "sources")
+
         python_exe_unpack.__handle(file)
 
-        source_dir = join(os.path.dirname(file), "sources",
-                          os.path.basename(file))
         py_files = [join(source_dir, f) for f in listdir(
             source_dir) if (isfile(join(source_dir, f)) and '.py' in f)]
         py_script = ""

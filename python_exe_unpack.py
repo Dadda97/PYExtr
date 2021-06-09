@@ -20,7 +20,7 @@ from unpy2exe import unpy2exe
 import tempfile
 
 DEV_NULL = open(os.devnull, "wb")
-UNPACKED_FOLDER_NAME = tempfile.gettempdir()
+UNPACKED_FOLDER_NAME = "unpacked"
 
 logging = True
 print_or = print
@@ -73,8 +73,7 @@ class PythonExectable(object):
         if not os.path.exists(self.with_header_pycs_dir):
             os.makedirs(self.with_header_pycs_dir)
 
-        self.py_sources_dir = os.path.join(os.path.dirname(
-            self.file_path), "sources", os.path.basename(self.file_path))
+        self.py_sources_dir = os.path.join(self.extraction_dir, "sources")
         if not os.path.exists(self.py_sources_dir):
             os.makedirs(self.py_sources_dir)
 
