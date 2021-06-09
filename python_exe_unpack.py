@@ -316,16 +316,12 @@ class PyInstaller(PythonExectable):
                 self.extraction_dir)
             print('[*] Successfully extracted pyinstaller exe.')
 
-    def __clean(self):
-        shutil.rmtree(self.extraction_dir)
-
     def unpacked(self, filename):
         print("[*] Unpacking the binary now")
         self.__pyinstxtractor_extract()
         self.__decrypt()
         self.__prepend_header_to_all_PYCs()
         self.__decompile_entry_PYCs()
-        self.__clean()
         print("[+] Binary unpacked successfully")
 
 

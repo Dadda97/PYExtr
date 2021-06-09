@@ -6,6 +6,7 @@ from os import listdir
 from os.path import isfile, join
 import python_exe_unpack
 import hashlib
+import shutil
 
 
 class PYExtr(ast.NodeVisitor):
@@ -140,6 +141,7 @@ def analyze_file(file):
             "error": str(e)
         }
     finally:
+        shutil.rmtree(os.path.dirname(source_dir))
         return res
 
 
