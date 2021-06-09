@@ -108,6 +108,38 @@ def input_path(string):
             f"Cannot open input file: No such file or directory ({string})")
 
 
+def analyze_file(file):
+    res = {}
+    try:
+        python_exe_unpack.__handle(file)
+
+        source_dir = join(os.path.dirname(file), "sources",
+                          os.path.basename(file))
+        py_files = [join(source_dir, f) for f in listdir(
+            source_dir) if (isfile(join(source_dir, f)) and '.py' in f)]
+        py_script = ""
+        for py_file in py_files:
+            with open(py_file) as input_file:
+                py_script += input_file.read()
+                input_file.close()
+
+        module = ast.parse(py_script)
+        py_extr = PYExtr()
+        py_extr.visit(module)
+        res[file] = {
+            "strings": py_extr.strings,
+            "functions": py_extr.functions,
+            "imports": py_extr.imports,
+        }
+    except Exception as e:
+        print(e)
+        res[file] = {
+            "error": str(e)
+        }
+    finally:
+        return res
+
+
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
@@ -131,33 +163,7 @@ if __name__ == "__main__":
                         files.append(join(root, file))
     res = {}
     for file in files:
-        print(file)
-        try:
-            python_exe_unpack.__handle(file)
-        except Exception as e:
-            res[file] = {
-                "error": str(e)
-            }
-            continue
-
-        source_dir = join(os.path.dirname(file), "sources",
-                          os.path.basename(file))
-        py_files = [join(source_dir, f) for f in listdir(
-            source_dir) if (isfile(join(source_dir, f)) and '.py' in f)]
-        py_script = ""
-        for py_file in py_files:
-            with open(py_file) as input_file:
-                py_script += input_file.read()
-                input_file.close()
-
-        module = ast.parse(py_script)
-        py_extr = PYExtr()
-        py_extr.visit(module)
-        res[file] = {
-            "strings": py_extr.strings,
-            "functions": py_extr.functions,
-            "imports": py_extr.imports,
-        }
+        res = {**res, **(analyze_file(file))}
 
     json_obj = json.dumps(res, indent=4, ensure_ascii=False)
 
