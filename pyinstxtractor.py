@@ -245,6 +245,10 @@ class PyInstArchive:
 
         for entry in self.tocList:
             basePath = os.path.dirname(entry.name)
+
+            if '\\' in entry.name or "/" in entry.name:  # interested only in entrypoints
+                continue
+
             if basePath != '':
                 # Check if path exists, create if not
                 if not os.path.exists(basePath):
