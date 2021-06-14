@@ -34,18 +34,22 @@ def print(str):
 
 class python_exe_unpackError(Exception):
     def __init__(self, message):
-        self.message = message
-        super().__init__(self.message)
+        self.message = "python_exe_unpackError " + message
+        return super().__init__(self.message)
 
 
 class FileNotFoundException(Exception):
-    """Raised when binary is not found"""
-    pass
+    def __init__(self):
+        self.message = "python_exe_unpackError " + \
+            "Raised when binary is not found"
+        return super().__init__(self.message)
 
 
 class FileFormatException(Exception):
-    """Raised when the binary is not exe or dll"""
-    pass
+    def __init__(self):
+        self.message = "python_exe_unpackError " + \
+            "Raised when the binary is not exe or dll"
+        return super().__init__(self.message)
 
 
 class PythonExectable(object):
