@@ -116,8 +116,9 @@ def analyze_file(file):
                       os.path.basename(file), "sources")
     try:
 
-        python_exe_unpack.__handle(file)
+        code_obj = python_exe_unpack.__handle(file)
 
+        print(code_obj)
         py_files = [join(source_dir, f) for f in listdir(
             source_dir) if (isfile(join(source_dir, f)) and '.py' in f)]
         py_script = ""

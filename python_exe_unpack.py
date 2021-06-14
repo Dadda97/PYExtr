@@ -4,6 +4,9 @@ Author: In Ming Loh
 Email: inming.loh@countercept.com
 '''
 from __future__ import print_function
+from unpy2exe import unpy2exe
+import pyinstxtractor
+import pefile
 import sys
 import os
 import struct
@@ -11,13 +14,8 @@ import abc
 import argparse
 import glob
 import shutil
+from xdis.load import load_module
 
-import pefile
-import pyinstxtractor
-import uncompyle6
-from unpy2exe import unpy2exe
-
-import tempfile
 
 DEV_NULL = open(os.devnull, "wb")
 UNPACKED_FOLDER_NAME = "unpacked"
@@ -107,20 +105,25 @@ class PythonExectable(object):
             pass
 
     @staticmethod
-    def decompile_pyc(dir_compiled, dir_decompiled, pyc_files, output_file=None):
+    def get_code_obj(dir_compiled, dir_decompiled, pyc_files, output_file=None):
+        code_obj = {}
+        try:
+            code_obj = load_module(os.path.join(
+                dir_compiled, pyc_files[0]), {})[3]
+        except Exception as e:
+            raise e
 
-        return uncompyle6.main.main(dir_compiled, dir_decompiled, pyc_files, [], output_file)
-        # uncompyle6.main.main(dir_decompiled, dir_decompiled, pyc_files, None, None, None, False, False, False, False, False)
+        return code_obj
 
-    @staticmethod
+    @ staticmethod
     def current_dir_pyc_files(pyc_directory):
         return [x for x in os.listdir(pyc_directory) if x.endswith(".pyc")]
 
-    @abc.abstractmethod
+    @ abc.abstractmethod
     def is_magic_recognised(self):
         """Function that check if the magic bytes is recognised by the python packer."""
 
-    @abc.abstractmethod
+    @ abc.abstractmethod
     def unpacked(self, filename):
         """Function that unpacked the binary to python."""
 
@@ -176,13 +179,14 @@ class PyInstaller(PythonExectable):
         return os.path.exists(extracted_binary_path) and os.path.exists(encrypted_key_path_pyc)
 
     def __get_encryption_key(self, encrypted_key_path_pyc):
+        raise NotImplemented  # TODO: extract key from dis
         try:
             print(
                 "[*] Taking decryption key from {0}".format(encrypted_key_path_pyc))
             if os.path.exists(encrypted_key_path_pyc):
                 encrypted_key_path_py = encrypted_key_path_pyc[:-4] + ".py"
-                (total, okay, failed, verify_failed) = PythonExectable.decompile_pyc(
-                    self.extraction_dir, self.extraction_dir, [encrypted_key_path_pyc], encrypted_key_path_py)
+                # (total, okay, failed, verify_failed) = PythonExectable.get_code_obj(
+                #    self.extraction_dir, self.extraction_dir, [encrypted_key_path_pyc], encrypted_key_path_py)
                 print("[*] Looking for key inside the .pyc...")
                 if failed == 0 and verify_failed == 0:
                     from configparser import ConfigParser
@@ -250,24 +254,27 @@ class PyInstaller(PythonExectable):
         header = b''
         candidates_header_files = glob.glob(
             self.extraction_dir + '/pyimod0*.pyc')
-        print(self.extraction_dir)
         n_candidates = len(candidates_header_files)
         if n_candidates == 0:
             raise python_exe_unpackError(
                 "No candidates files for extracting the PYC header")
 
         for n, candidate in enumerate(candidates_header_files):
-            (total, okay, failed, verify_failed) = PythonExectable.decompile_pyc(
-                self.extraction_dir, self.extraction_dir, [candidate], "temp_header.py")
+            try:
+                okay = PythonExectable.get_code_obj(
+                    self.extraction_dir, self.extraction_dir, [candidate], "temp_header.py")
+            except:
+                continue
+
             if okay:
                 with open(candidate, 'rb') as candidate_file:
                     header = candidate_file.read(4)
                     candidate_file.close()
                     break
+
             if n == n_candidates:
                 raise python_exe_unpackError(
                     "No candidates files for extracting the PYC header is valid")
-
         if self.py_ver >= 37:               # PEP 552 -- Deterministic pycs
             header += b'\0' * 4        # Bitfield
             header += b'\0' * 8        # (Timestamp + size) || hash
@@ -310,7 +317,7 @@ class PyInstaller(PythonExectable):
                 backup_PYCs.append(entry+".pyc")
         if len(PYCs_list) == 0:
             PYCs_list = backup_PYCs
-        PythonExectable.decompile_pyc(
+        return PythonExectable.get_code_obj(
             self.with_header_pycs_dir, self.py_sources_dir, PYCs_list)
 
     def __pyinstxtractor_extract(self):
@@ -325,8 +332,7 @@ class PyInstaller(PythonExectable):
         self.__pyinstxtractor_extract()
         self.__decrypt()
         self.__prepend_header_to_all_PYCs()
-        self.__decompile_entry_PYCs()
-        print("[+] Binary unpacked successfully")
+        return self.__decompile_entry_PYCs()
 
 
 class Py2Exe(PythonExectable):
@@ -368,7 +374,7 @@ class Py2Exe(PythonExectable):
         if not is_error:
             folder_count = len(os.listdir(self.extraction_dir))
             if folder_count >= 1:
-                PythonExectable.decompile_pyc(
+                PythonExectable.get_code_obj(
                     self.extraction_dir, self.extraction_dir, PythonExectable.current_dir_pyc_files(self.extraction_dir))
             else:
                 print("[-] Error in unpacking the binary")
@@ -387,7 +393,7 @@ def __handle(file_name, output_dir=None, log_enable=False):
         py2exe.unpacked(file_name)
     elif pyinstaller.is_magic_recognised():
         print('[*] This exe is packed using pyinstaller')
-        pyinstaller.unpacked(file_name)
+        return pyinstaller.unpacked(file_name)
     else:
         print('[-] Sorry, can\'t tell what is this packed with')
 
