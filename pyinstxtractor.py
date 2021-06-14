@@ -86,7 +86,7 @@ def print(str):
 class PYInstxtractorError(Exception):
     def __init__(self, message):
         self.message = "PYInstxtractorError " + message
-        raise super().__init__(self.message)
+        return super().__init__(self.message)
 
 
 class CTOCEntry:
