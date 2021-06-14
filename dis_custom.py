@@ -473,6 +473,7 @@ def findlinestarts(code):
     Generate pairs (offset, lineno) as described in Python/compile.c.
 
     """
+    return(0, 0)
     byte_increments = code.co_lnotab[0::2]
     line_increments = code.co_lnotab[1::2]
     bytecode_len = len(code.co_code)
