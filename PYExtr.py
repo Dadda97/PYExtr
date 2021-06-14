@@ -2,103 +2,67 @@ import ast
 import json
 import argparse
 import os
-from os import listdir
-from os.path import isfile, join
+from os.path import join
 import python_exe_unpack
-import hashlib
 import shutil
+import dis
 
 
-class PYExtr(ast.NodeVisitor):
+class PYExtr():
     # Thanks to mortbauer's answer
     # https://stackoverflow.com/a/14661325/11033123
 
     def __init__(self):
-        super().__init__()
-
         self.strings = dict()
         self.functions = dict()
         self.imports = []
-        self.current_class = ""
+        self.current_class = None
 
-    def recursive(func):
-        def wrapper(self, node):
-            func(self, node)
-            for child in ast.iter_child_nodes(node):
-                self.visit(child)
-        return wrapper
+    def extract_features(self, code_obj):
+        self.analyse_function(code_obj)
 
-    @recursive
-    def visit_Str(self, node):
-        if node.value in self.strings:
-            self.strings[node.value] += 1
+    def analyse_function(self, code_obj):
+        parent_class = self.current_class
+        if self.current_class:
+            self.current_class = ".".join(
+                [self.current_class, code_obj.co_name])
         else:
-            self.strings[node.value] = 1
+            self.current_class = "-GLOBAL-"
 
-    def get_node_name(self, node):
-        node_name = type(node).__name__
-        return [node_name] if "FunctionDef" not in node_name and "ClassDef" not in node_name else []
+        try:
+            ins_list = list(dis.get_instructions(code_obj))
+        except:
+            import dis_custom
+            ins_list = list(dis_custom.get_instructions(code_obj))
 
-    def get_all_nodes(self, node):
-        child_nodes = list(ast.iter_child_nodes(node))
-        if len(child_nodes) == 0:
-            return self.get_node_name(node)
-        res = []
-        for child_node in child_nodes:
-            res += self.get_all_nodes(child_node)
-        node_name = self.get_node_name(node)
-        return node_name + res
+        opnames = []
 
-    def get_global_nodes(self, node):
-        child_nodes = list(ast.iter_child_nodes(node))
-        if len(child_nodes) == 0:
-            return self.get_node_name(node)
-        res = []
-        for child_node in [x for x in child_nodes if len(self.get_node_name(x)) > 0]:
-            res += self.get_global_nodes(child_node)
-        node_name = self.get_node_name(node)
-        return node_name + res
+        for i in range(len(ins_list)):
+            ins = ins_list[i]
+            if ins.opname == "LOAD_CONST":
+                if type(ins.argval) is str:
+                    if ins.argval in self.strings:
+                        self.strings[ins.argval] += 1
+                    else:
+                        self.strings[ins.argval] = 1
 
-    def get_fun_hash(self, node, global_fun=False):
-        nodes = self.get_all_nodes(
-            node) if not global_fun else self.get_global_nodes(node)
-        return hashlib.sha256(("-".join(nodes).encode("UTF-8"))).hexdigest()
+            elif ins.opname == "IMPORT_NAME":
+                add = ""
+                if ins_list[i+1].opname == "IMPORT_FROM":
+                    add = "." + ins_list[i+1].argval
+                if ins_list[i+1].opname == "IMPORT_STAR":
+                    add = ".*"
+                self.imports.append(ins.argval+add)
+            opnames.append(ins.opname)
 
-    @recursive
-    def visit_FunctionDef(self, node):
-        if not hasattr(node, "alreadyVisited"):
-            self.functions[node.name] = self.get_fun_hash(node)
+        for const in code_obj.co_consts:
+            if "code" in str(type(const)):
+                self.analyse_function(const)
 
-    @recursive
-    def visit_AsyncFunctionDef(self, node):
-        if not hasattr(node, "alreadyVisited"):
-            self.functions[node.name] = self.get_fun_hash(node)
+        self.functions[self.current_class] = "-".join(opnames)
+        self.current_class = parent_class
 
-    @recursive
-    def visit_Import(self, node):
-        for imp in node.names:
-            self.imports.append(imp.name)
-
-    @recursive
-    def visit_ImportFrom(self, node):
-        self.imports.append(node.module)
-
-    @recursive
-    def visit_ClassDef(self, node):
-        class_name = node.name
-        methods = [n for n in node.body if isinstance(n, ast.FunctionDef)]
-        for method in methods:
-            self.functions[class_name + "." +
-                           method.name] = self.get_fun_hash(node)
-            method.alreadyVisited = True
-
-    @recursive
-    def visit_Module(self, node):
-        self.functions["+global+"] = self.get_fun_hash(node, global_fun=True)
-
-    @recursive
-    def generic_visit(self, node):
-        pass
+        i += 1
 
 
 def input_path(string):
@@ -110,38 +74,25 @@ def input_path(string):
 
 
 def analyze_file(file):
-    res = {}
+    res = dict()
 
-    source_dir = join(os.getcwd(), "unpacked",
-                      os.path.basename(file), "sources")
+    code_obj = python_exe_unpack.__handle(file)
+
+    py_extr = PYExtr()
     try:
-
-        code_obj = python_exe_unpack.__handle(file)
-
-        print(code_obj)
-        py_files = [join(source_dir, f) for f in listdir(
-            source_dir) if (isfile(join(source_dir, f)) and '.py' in f)]
-        py_script = ""
-        for py_file in py_files:
-            with open(py_file) as input_file:
-                py_script += input_file.read()
-                input_file.close()
-
-        module = ast.parse(py_script)
-        py_extr = PYExtr()
-        py_extr.visit(module)
+        py_extr.extract_features(code_obj)
         res[file] = {
             "strings": py_extr.strings,
             "functions": py_extr.functions,
             "imports": py_extr.imports,
         }
     except Exception as e:
-        print(e)
         res[file] = {
             "error": str(e)
         }
     finally:
-        file_extr_dir = os.path.dirname(source_dir)
+        file_extr_dir = os.path.join(
+            os.getcwd(), "unpacked", os.path.basename(file))
         shutil.rmtree(file_extr_dir)
         return res
 
