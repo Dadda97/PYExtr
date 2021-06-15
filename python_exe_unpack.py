@@ -4,12 +4,10 @@ Author: In Ming Loh
 Email: inming.loh@countercept.com
 '''
 from __future__ import print_function
-from unpy2exe import unpy2exe
 import pyinstxtractor
 import pefile
 import sys
 import os
-import struct
 import abc
 import argparse
 import glob
@@ -335,63 +333,13 @@ class PyInstaller(PythonExectable):
         return self.__decompile_entry_PYCs()
 
 
-class Py2Exe(PythonExectable):
-
-    def is_magic_recognised(self):
-        self.open_executable()
-        is_py2exe = False
-        script_resource = None
-        pe_file = pefile.PE(self.file_path)
-
-        if hasattr(pe_file, 'DIRECTORY_ENTRY_RESOURCE'):
-            for entry in pe_file.DIRECTORY_ENTRY_RESOURCE.entries:
-                if str(entry.name) == str("PYTHONSCRIPT"):
-                    script_resource = entry.directory.entries[0].directory.entries[0]
-                    break
-
-        if script_resource != None:
-            rva = script_resource.data.struct.OffsetToData
-            size = script_resource.data.struct.Size
-            dump = pe_file.get_data(rva, size)
-            current = struct.calcsize(b'iiii')
-            metadata = struct.unpack(b'iiii', dump[:current])
-            if hex(metadata[0]) == "0x78563412":
-                is_py2exe = True
-
-        self.close()
-        return is_py2exe
-
-    def unpacked(self, filename):
-        print("[*] Unpacking the binary now")
-        is_error = False
-        try:
-            unpy2exe(filename, None, self.extraction_dir)
-        except:
-            # python 2 and 3 marshal data differently and has different implementation and unfortunately unpy2exe depends on marshal.
-            print("[-] Error in unpacking the exe. Probably due to version incompability (exe created using python 2 and run this script with python 3)")
-            is_error = True
-
-        if not is_error:
-            folder_count = len(os.listdir(self.extraction_dir))
-            if folder_count >= 1:
-                PythonExectable.get_code_obj(
-                    self.extraction_dir, self.extraction_dir, PythonExectable.current_dir_pyc_files(self.extraction_dir))
-            else:
-                print("[-] Error in unpacking the binary")
-                sys.exit(1)
-
-
 def __handle(file_name, output_dir=None, log_enable=False):
 
     global logging
     logging = log_enable
     pyinstaller = PyInstaller(file_name, output_dir)
-    py2exe = Py2Exe(file_name, output_dir)
 
-    if py2exe.is_magic_recognised():
-        print('[*] This exe is packed using py2exe')
-        py2exe.unpacked(file_name)
-    elif pyinstaller.is_magic_recognised():
+    if pyinstaller.is_magic_recognised():
         print('[*] This exe is packed using pyinstaller')
         return pyinstaller.unpacked(file_name)
     else:
@@ -399,7 +347,6 @@ def __handle(file_name, output_dir=None, log_enable=False):
 
     # Close all the open file
     pyinstaller.close()
-    py2exe.close()
 
 
 if __name__ == '__main__':
