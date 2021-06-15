@@ -1,4 +1,3 @@
-import ast
 import json
 import argparse
 import os
@@ -9,8 +8,6 @@ import dis_custom
 
 
 class PYExtr():
-    # Thanks to mortbauer's answer
-    # https://stackoverflow.com/a/14661325/11033123
 
     def __init__(self):
         self.strings = dict()
