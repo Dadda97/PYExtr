@@ -110,7 +110,6 @@ class PythonExectable(object):
                 dir_compiled, pyc_files[0]), {})[3]
         except Exception as e:
             raise e
-
         return code_obj
 
     @ staticmethod
@@ -315,8 +314,12 @@ class PyInstaller(PythonExectable):
                 backup_PYCs.append(entry+".pyc")
         if len(PYCs_list) == 0:
             PYCs_list = backup_PYCs
-        return PythonExectable.get_code_obj(
-            self.with_header_pycs_dir, self.py_sources_dir, PYCs_list)
+        code_obj = PythonExectable.get_code_obj(
+            self.with_header_pycs_dir, self.py_sources_dir, PYCs_list, self.py_inst_archive)
+
+        code_obj.pyver = self.py_inst_archive.pyver
+
+        return code_obj
 
     def __pyinstxtractor_extract(self):
         if self.py_inst_archive.getCArchiveInfo():

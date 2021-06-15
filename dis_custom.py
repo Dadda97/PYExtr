@@ -289,7 +289,7 @@ def get_instructions(x, *, first_line=None):
         line_offset = 0
     return _get_instructions_bytes(co.co_code, co.co_varnames, co.co_names,
                                    co.co_consts, cell_names, linestarts,
-                                   line_offset)
+                                   line_offset, x.pyver)
 
 
 def _get_const_info(const_index, const_list):
@@ -322,7 +322,7 @@ def _get_name_info(name_index, name_list):
 
 
 def _get_instructions_bytes(code, varnames=None, names=None, constants=None,
-                            cells=None, linestarts=None, line_offset=0):
+                            cells=None, linestarts=None, line_offset=0, pyver=39):
     """Iterate over the instructions in a bytecode string.
 
     Generates a sequence of Instruction namedtuples giving the details of each
@@ -331,9 +331,9 @@ def _get_instructions_bytes(code, varnames=None, names=None, constants=None,
     arguments.
 
     """
-    labels = findlabels(code)
+    labels = findlabels(code, pyver)
     starts_line = None
-    for offset, op, arg in _unpack_opargs(code):
+    for offset, op, arg in _unpack_opargs(code, pyver):
         if linestarts is not None:
             starts_line = linestarts.get(offset, None)
             if starts_line is not None:
@@ -357,7 +357,10 @@ def _get_instructions_bytes(code, varnames=None, names=None, constants=None,
             elif op in haslocal:
                 argval, argrepr = _get_name_info(arg, varnames)
             elif op in hascompare:
-                argval = cmp_op[arg]
+                try:
+                    argval = cmp_op[arg]
+                except:
+                    argval = '?'
                 argrepr = argval
             elif op in hasfree:
                 argval, argrepr = _get_name_info(arg, cells)
@@ -435,26 +438,39 @@ def _disassemble_str(source, **kwargs):
 disco = disassemble                     # XXX For backwards compatibility
 
 
-def _unpack_opargs(code):
-    extended_arg = 0
-    for i in range(0, len(code), 2):
-        op = code[i]
-        if op >= HAVE_ARGUMENT:
-            arg = code[i+1] | extended_arg
-            extended_arg = (arg << 8) if op == EXTENDED_ARG else 0
-        else:
-            arg = None
-        yield (i, op, arg)
+def _unpack_opargs(code, pyver):
+    if pyver < 36:
+        n = len(code)
+        i = 0
+        while i < n:
+            op = code[i]
+            i = i+1
+            if op >= HAVE_ARGUMENT:
+                arg = code[i] + code[i+1]*256
+                i = i+2
+            yield (i, op, arg)
+
+    else:
+
+        extended_arg = 0
+        for i in range(0, len(code), 2):
+            op = code[i]
+            if op >= HAVE_ARGUMENT:
+                arg = code[i+1] | extended_arg
+                extended_arg = (arg << 8) if op == EXTENDED_ARG else 0
+            else:
+                arg = None
+            yield (i, op, arg)
 
 
-def findlabels(code):
+def findlabels(code, pyver):
     """Detect all offsets in a byte code which are jump targets.
 
     Return the list of offsets.
 
     """
     labels = []
-    for offset, op, arg in _unpack_opargs(code):
+    for offset, op, arg in _unpack_opargs(code, pyver):
         if arg is not None:
             if op in hasjrel:
                 label = offset + 2 + arg

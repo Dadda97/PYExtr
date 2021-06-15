@@ -5,7 +5,7 @@ import os
 from os.path import join
 import python_exe_unpack
 import shutil
-import dis
+import dis_custom
 
 
 class PYExtr():
@@ -29,12 +29,7 @@ class PYExtr():
         else:
             self.current_class = "-GLOBAL-"
 
-        try:
-            ins_list = list(dis.get_instructions(code_obj))
-        except:
-            import dis_custom
-            ins_list = list(dis_custom.get_instructions(code_obj))
-
+        ins_list = list(dis_custom.get_instructions(code_obj))
         opnames = []
 
         for i in range(len(ins_list)):
