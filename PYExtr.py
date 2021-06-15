@@ -2,9 +2,20 @@ import json
 import argparse
 import os
 from os.path import join
-import python_exe_unpack
 import shutil
-import dis_custom
+
+standalone = False
+
+if __name__ == "__main__":
+    import python_exe_unpack
+    import dis_custom
+
+    standalone = True
+
+else:
+
+    from PYExtr import python_exe_unpack
+    from PYExtr import dis_custom
 
 
 class PYExtr():
@@ -68,7 +79,9 @@ def input_path(string):
 def analyze_file(file):
     res = dict()
 
-    code_obj = python_exe_unpack.__handle(file)
+    global standalone
+
+    code_obj = python_exe_unpack.__handle(file, standalone=standalone)
 
     py_extr = PYExtr()
     try:

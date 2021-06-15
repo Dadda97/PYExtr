@@ -4,7 +4,6 @@ Author: In Ming Loh
 Email: inming.loh@countercept.com
 '''
 from __future__ import print_function
-import pyinstxtractor
 import pefile
 import sys
 import os
@@ -110,6 +109,7 @@ class PythonExectable(object):
                 dir_compiled, pyc_files[0]), {})[3]
         except Exception as e:
             raise e
+        code_obj.pyver = pyc_files.pyver
         return code_obj
 
     @ staticmethod
@@ -161,7 +161,7 @@ class PyInstaller(PythonExectable):
         self.entry_points = []
         self.py_ver = 0
 
-        self.py_inst_archive = pyinstxtractor.PyInstArchive(self.file_path)
+        self.py_inst_archive = PyInstArchive(self.file_path)
 
         # A hack to check the existence of the file
         self.open_executable()
@@ -317,8 +317,6 @@ class PyInstaller(PythonExectable):
         code_obj = PythonExectable.get_code_obj(
             self.with_header_pycs_dir, self.py_sources_dir, PYCs_list, self.py_inst_archive)
 
-        code_obj.pyver = self.py_inst_archive.pyver
-
         return code_obj
 
     def __pyinstxtractor_extract(self):
@@ -336,7 +334,17 @@ class PyInstaller(PythonExectable):
         return self.__decompile_entry_PYCs()
 
 
-def __handle(file_name, output_dir=None, log_enable=False):
+PyInstArchive = None
+
+
+def __handle(file_name, output_dir=None, log_enable=False, standalone=False):
+
+    global PyInstArchive
+
+    if standalone:
+        from pyinstxtractor import PyInstArchive
+    else:
+        from PYExtr.pyinstxtractor import PyInstArchive
 
     global logging
     logging = log_enable
