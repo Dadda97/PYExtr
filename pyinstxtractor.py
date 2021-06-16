@@ -141,7 +141,17 @@ class PyInstArchive:
             print('[+] Pyinstaller version: 2.1+')
             self.pyinstVer = 21     # pyinstaller 2.1+
             return True
-
+        self.fPtr.seek(0)
+        magic_offset = self.fPtr.read().find(self.MAGIC, int(self.fileSize/2))
+        if magic_offset > 0:
+            self.fPtr.seek(magic_offset + self.PYINST20_COOKIE_SIZE)
+            if (self.fPtr.read(6).upper() == b"PYTHON"):
+                self.pyinstVer = 21
+                self.fileSize = magic_offset + self.PYINST21_COOKIE_SIZE
+            else:
+                self.pyinstVer = 20
+                self.fileSize = magic_offset + self.PYINST20_COOKIE_SIZE
+            return True
         raise PYInstxtractorError(
             'Unsupported pyinstaller version or not a pyinstaller archive')
 
