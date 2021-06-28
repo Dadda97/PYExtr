@@ -26,10 +26,10 @@ class PYExtr():
         self.imports = []
         self.current_class = None
 
-    def extract_features(self, code_obj):
-        self.analyse_function(code_obj)
+    def extract_features(self, code_obj, pyver):
+        self.analyse_function(code_obj, pyver)
 
-    def analyse_function(self, code_obj):
+    def analyse_function(self, code_obj, pyver=39):
         parent_class = self.current_class
         if self.current_class:
             self.current_class = ".".join(
@@ -37,7 +37,7 @@ class PYExtr():
         else:
             self.current_class = "-GLOBAL-"
 
-        ins_list = list(dis_custom.get_instructions(code_obj))
+        ins_list = list(dis_custom.get_instructions(code_obj, pyver=pyver))
         opnames = []
 
         for i in range(len(ins_list)):
@@ -81,17 +81,18 @@ def analyze_file(file):
 
     global standalone
 
-    code_obj = python_exe_unpack.__handle(file, standalone=standalone)
-
+    code_obj, pyver = python_exe_unpack.__handle(file, standalone=standalone)
     py_extr = PYExtr()
+    py_extr.extract_features(code_obj, pyver)
     try:
-        py_extr.extract_features(code_obj)
         res[file] = {
             "strings": py_extr.strings,
             "functions": py_extr.functions,
             "imports": py_extr.imports,
         }
+
     except Exception as e:
+        raise e
         res[file] = {
             "error": str(e)
         }

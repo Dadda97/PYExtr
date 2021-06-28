@@ -269,7 +269,7 @@ class Instruction(_Instruction):
         return ' '.join(fields).rstrip()
 
 
-def get_instructions(x, *, first_line=None):
+def get_instructions(x, *, first_line=None, pyver=39):
     """Iterator for the opcodes in methods, functions or code
 
     Generates a series of Instruction named tuples giving the details of
@@ -289,7 +289,7 @@ def get_instructions(x, *, first_line=None):
         line_offset = 0
     return _get_instructions_bytes(co.co_code, co.co_varnames, co.co_names,
                                    co.co_consts, cell_names, linestarts,
-                                   line_offset, x.pyver)
+                                   line_offset, pyver)
 
 
 def _get_const_info(const_index, const_list):
