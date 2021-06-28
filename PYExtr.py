@@ -81,10 +81,11 @@ def analyze_file(file):
 
     global standalone
 
-    code_obj, pyver = python_exe_unpack.__handle(file, standalone=standalone)
-    py_extr = PYExtr()
-    py_extr.extract_features(code_obj, pyver)
     try:
+        code_obj, pyver = python_exe_unpack.__handle(
+            file, standalone=standalone)
+        py_extr = PYExtr()
+        py_extr.extract_features(code_obj, pyver)
         res[file] = {
             "strings": py_extr.strings,
             "functions": py_extr.functions,
@@ -92,14 +93,17 @@ def analyze_file(file):
         }
 
     except Exception as e:
-        raise e
         res[file] = {
             "error": str(e)
         }
+
     finally:
-        file_extr_dir = os.path.join(
-            os.getcwd(), "unpacked", os.path.basename(file))
-        shutil.rmtree(file_extr_dir)
+        try:
+            file_extr_dir = os.path.join(
+                os.getcwd(), "unpacked", os.path.basename(file))
+            shutil.rmtree(file_extr_dir)
+        except:
+            pass
         return res
 
 
