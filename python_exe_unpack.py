@@ -174,33 +174,9 @@ class PyInstaller(PythonExectable):
         return os.path.exists(extracted_binary_path) and os.path.exists(encrypted_key_path_pyc)
 
     def __get_encryption_key(self, encrypted_key_path_pyc):
-        raise NotImplemented  # TODO: extract key from dis
-        try:
-            print(
-                "[*] Taking decryption key from {0}".format(encrypted_key_path_pyc))
-            if os.path.exists(encrypted_key_path_pyc):
-                encrypted_key_path_py = encrypted_key_path_pyc[:-4] + ".py"
-                # (total, okay, failed, verify_failed) = PythonExectable.get_code_obj(
-                #    self.extraction_dir, self.extraction_dir, [encrypted_key_path_pyc], encrypted_key_path_py)
-                print("[*] Looking for key inside the .pyc...")
-                if failed == 0 and verify_failed == 0:
-                    from configparser import ConfigParser
-                    from io import StringIO
-                    ini_str = StringIO(
-                        u"[secret]\n" + open(encrypted_key_path_py, 'r').read())
-                    config = ConfigParser()
-                    config.readfp(ini_str)
-                    temp_key = config.get("secret", "key")
-                    # To remove single quote from first and last position in the extracted password
-                    encryption_key = temp_key[1:len(temp_key)-1]
-                    return encryption_key
-            return None
-        except Exception as e:
-            raise python_exe_unpackError(
-                f"Exception occured while trying to get the encryption key.\n{e}")
-        finally:
-            if os.path.exists(encrypted_key_path_py):
-                os.remove(encrypted_key_path_py)
+        code_obj = PythonExectable.get_code_obj(
+            self.extraction_dir, self.extraction_dir, [encrypted_key_path_pyc], "temp_header.py")
+        return code_obj.co_consts[0]
 
     def __decrypt_pyc(self, extracted_binary_path, encryption_key):
         # Code reference from https://0xec.blogspot.sg/2017/02/extracting-encrypted-pyinstaller.html
