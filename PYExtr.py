@@ -44,10 +44,11 @@ class PYExtr():
             ins = ins_list[i]
             if ins.opname == "LOAD_CONST":
                 if type(ins.argval) is str:
-                    if ins.argval in self.strings:
-                        self.strings[ins.argval] += 1
+                    _str = ins.argval.replace("0x00", "")
+                    if _str in self.strings:
+                        self.strings[_str] += 1
                     else:
-                        self.strings[ins.argval] = 1
+                        self.strings[_str] = 1
 
             elif ins.opname == "IMPORT_NAME":
                 add = ""
