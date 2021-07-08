@@ -44,7 +44,7 @@ class PYExtr():
             ins = ins_list[i]
             if ins.opname == "LOAD_CONST":
                 if type(ins.argval) is str:
-                    _str = ins.argval.replace("0x00", "")
+                    _str = ins.argval.replace("\x00", "")
                     if _str in self.strings:
                         self.strings[_str] += 1
                     else:
